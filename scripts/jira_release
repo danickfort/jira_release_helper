@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-
-if [[ ! $@ ]]; then
-    python3 -m jira_release.jira_release --help
-else
-    python3 -m jira_release.jira_release $@
-fi

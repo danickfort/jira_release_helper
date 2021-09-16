@@ -18,10 +18,9 @@ def get_issues_in_deployment(jira_prefix, remote_version, to_deploy_version, git
     @rtype: List[Str]
     """
     path = os.path.join(os.getcwd(), git_path)
+    changes = subprocess.check_output("git log --no-color --oneline".split() + [f"{remote_version}..{to_deploy_version}"],
+                                      cwd=path, text=True)
 
-    changes = subprocess.getoutput(
-        f"cd {path};git log --no-color --oneline {remote_version}..{to_deploy_version}"
-    )
     changes = changes.split("\n")
 
     issues = []
@@ -46,15 +45,19 @@ class JiraReleaseHelper(object):
         try:
             username = os.environ["JIRA_USERNAME"]
             password = os.environ["JIRA_PASSWORD"]
+            url = os.environ["JIRA_URL"]
         except KeyError:
-            sys.exit("Please set JIRA_USERNAME and JIRA_PASSWORD environment variables")
+            sys.exit("Please set JIRA_USERNAME, JIRA_PASSWORD and JIRA_URL environment variables")
 
-        self.jira = JIRA("https://jira.liip.ch", basic_auth=(username, password))
+        try:
+            self.jira = JIRA(url, basic_auth=(username, password))
+        except Exception:
+            sys.exit("Jira authentication issue")
 
     def __comment_confirm_deploy(self, environment, issue):
         if (
             input(
-                f"Do you want to comment about the deployment of {issue} to {environment} on the Jira issue? [y/n]: "
+                f"Do you want to comment about the deployment of {issue} to {environment} on the Jira issue? [y/N]: "
             ).lower()
             == "y"
         ):
@@ -82,7 +85,7 @@ class JiraReleaseHelper(object):
 
         if (
             input(
-                f"Do you want to close Jira issue {issue} and mark it as {resolution_name} ? [y/n]: "
+                f"Do you want to close Jira issue {issue} and mark it as {resolution_name} ? [y/N]: "
             ).lower()
             == "y"
         ):
